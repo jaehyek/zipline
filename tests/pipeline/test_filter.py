@@ -23,7 +23,7 @@ from numpy import (
     rot90,
     sum as np_sum
 )
-from numpy.random import randn, seed as random_seed
+from numpy.random import choice, randn, seed as random_seed
 import pandas as pd
 
 from zipline.errors import BadPercentileBounds
@@ -34,13 +34,14 @@ from zipline.pipeline.filters import (
     All,
     Any,
     AtLeastN,
+    NoMissingValues,
     StaticAssets,
     StaticSids,
 )
 from zipline.testing import parameter_space, permute_rows, ZiplineTestCase
 from zipline.testing.fixtures import WithSeededRandomPipelineEngine
 from zipline.testing.predicates import assert_equal
-from zipline.utils.numpy_utils import float64_dtype, int64_dtype
+from zipline.utils.numpy_utils import float64_dtype, int64_dtype, object_dtype
 from .base import BasePipelineTestCase, with_default_shape
 
 
@@ -377,6 +378,154 @@ class FilterTestCase(BasePipelineTestCase):
             expected={'isfinite': isfinite(data)},
             initial_workspace={self.f: data},
             mask=self.build_mask(self.ones_mask()),
+        )
+
+    def test_no_missing_values_float_factor_input(self):
+        """Test float factor input to `NoMissingValues`
+        """
+        class SomeWindowSafeFactor(Factor):
+            dtype = float64_dtype
+            inputs = ()
+            window_length = 0
+            window_safe = True
+
+        input_factor = SomeWindowSafeFactor()
+
+        shape = (10, 6)
+        data = self.randn_data(seed=10, shape=shape)
+        data[eye(*shape, dtype=bool)] = input_factor.missing_value
+
+        expected_3 = array([[1, 0, 0, 0, 1, 1],
+                            [1, 1, 0, 0, 0, 1],
+                            [1, 1, 1, 0, 0, 0],
+                            [1, 1, 1, 1, 0, 0],
+                            [1, 1, 1, 1, 1, 0],
+                            [1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1]], dtype=bool)
+
+        expected_4 = array([[0, 0, 0, 0, 1, 1],
+                            [1, 0, 0, 0, 0, 1],
+                            [1, 1, 0, 0, 0, 0],
+                            [1, 1, 1, 0, 0, 0],
+                            [1, 1, 1, 1, 0, 0],
+                            [1, 1, 1, 1, 1, 0],
+                            [1, 1, 1, 1, 1, 1]], dtype=bool)
+        self.check_terms(
+            terms={
+                '3': NoMissingValues([input_factor], window_length=3),
+                '4': NoMissingValues([input_factor], window_length=4),
+            },
+            expected={
+                '3': expected_3,
+                '4': expected_4,
+            },
+            initial_workspace={input_factor: data},
+            mask=self.build_mask(ones(shape=shape))
+        )
+
+    def test_no_missing_values_int_factor_input(self):
+        """Test int factor input to `NoMissingValues`
+        """
+        class SomeWindowSafeIntFactor(Factor):
+            dtype = int64_dtype
+            inputs = ()
+            window_length = 0
+            window_safe = True
+            missing_value = 0
+
+        input_factor = SomeWindowSafeIntFactor()
+
+        shape = (10, 6)
+        data = choice(range(1, 5), size=shape, replace=True)
+        data[eye(*shape, dtype=bool)] = input_factor.missing_value
+
+        expected_3 = array([[1, 0, 0, 0, 1, 1],
+                            [1, 1, 0, 0, 0, 1],
+                            [1, 1, 1, 0, 0, 0],
+                            [1, 1, 1, 1, 0, 0],
+                            [1, 1, 1, 1, 1, 0],
+                            [1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1]], dtype=bool)
+
+        expected_4 = array([[0, 0, 0, 0, 1, 1],
+                            [1, 0, 0, 0, 0, 1],
+                            [1, 1, 0, 0, 0, 0],
+                            [1, 1, 1, 0, 0, 0],
+                            [1, 1, 1, 1, 0, 0],
+                            [1, 1, 1, 1, 1, 0],
+                            [1, 1, 1, 1, 1, 1]], dtype=bool)
+        self.check_terms(
+            terms={
+                '3': NoMissingValues([input_factor], window_length=3),
+                '4': NoMissingValues([input_factor], window_length=4),
+            },
+            expected={
+                '3': expected_3,
+                '4': expected_4,
+            },
+            initial_workspace={input_factor: data},
+            mask=self.build_mask(ones(shape=shape))
+        )
+
+    def test_no_missing_values_classifier_input(self):
+        """Test classifier factor input to `NoMissingValues`
+        """
+        class SomeWindowSafeStringClassifier(Classifier):
+            dtype = object_dtype
+            inputs = ()
+            window_length = 0
+            missing_value = ''
+            window_safe = True
+
+        input_factor = SomeWindowSafeStringClassifier()
+
+        shape = (10, 6)
+        data = choice(
+            array(['a', 'e', 'i', 'o', 'u'], dtype=object_dtype),
+            size=shape,
+            replace=True
+        )
+        data[eye(*shape, dtype=bool)] = input_factor.missing_value
+
+        expected_3 = array([[1, 0, 0, 0, 1, 1],
+                            [1, 1, 0, 0, 0, 1],
+                            [1, 1, 1, 0, 0, 0],
+                            [1, 1, 1, 1, 0, 0],
+                            [1, 1, 1, 1, 1, 0],
+                            [1, 1, 1, 1, 1, 1],
+                            [1, 1, 1, 1, 1, 1]], dtype=bool)
+
+        expected_4 = array([[0, 0, 0, 0, 1, 1],
+                            [1, 0, 0, 0, 0, 1],
+                            [1, 1, 0, 0, 0, 0],
+                            [1, 1, 1, 0, 0, 0],
+                            [1, 1, 1, 1, 0, 0],
+                            [1, 1, 1, 1, 1, 0],
+                            [1, 1, 1, 1, 1, 1]], dtype=bool)
+
+        self.check_terms(
+            terms={
+                '3': NoMissingValues([input_factor], window_length=3),
+                '4': NoMissingValues([input_factor], window_length=4),
+            },
+            expected={
+                '3': expected_3,
+                '4': expected_4,
+            },
+            initial_workspace={input_factor: data},
+            mask=self.build_mask(ones(shape=shape))
+        )
+
+    def test_no_missing_values_filter_input(self):
+        """Test error is raised when filter factor is input to
+        `NoMissingValues`
+        """
+        with self.assertRaises(ValueError) as err:
+            NoMissingValues([Mask()], window_length=4)
+
+        self.assertEqual(
+            "Input to filter `NoMissingValues` cannot be a Filter.",
+            err.exception.message
         )
 
     def test_all(self):

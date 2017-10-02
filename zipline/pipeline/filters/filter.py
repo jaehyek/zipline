@@ -5,6 +5,7 @@ from itertools import chain
 from operator import attrgetter
 
 from numpy import (
+    any as np_any,
     float64,
     nan,
     nanpercentile,
@@ -32,6 +33,7 @@ from zipline.pipeline.mixins import (
     RestrictedDTypeMixin,
     SingleInputMixin,
 )
+from zipline.pipeline.sentinels import NotSpecified
 from zipline.pipeline.term import ComputableTerm, Term
 from zipline.utils.input_validation import expect_types
 from zipline.utils.memoize import classlazyval
@@ -533,3 +535,34 @@ class StaticAssets(StaticSids):
     def __new__(cls, assets):
         sids = frozenset(asset.sid for asset in assets)
         return super(StaticAssets, cls).__new__(cls, sids)
+
+
+class NoMissingValues(CustomFilter, SingleInputMixin):
+    """Pipeline filter indicating input term has data for a given window.
+    """
+
+    def __new__(cls,
+                inputs,
+                window_length,
+                mask=NotSpecified):
+
+        if isinstance(inputs[0], Filter):
+            raise ValueError(
+                "Input to filter `NoMissingValues` cannot be a Filter."
+            )
+
+        return super(NoMissingValues, cls).__new__(
+            cls,
+            inputs=inputs,
+            window_length=window_length,
+            mask=mask,
+        )
+
+    def compute(self, today, assets, out, value):
+        if isinstance(value, LabelArray):
+            out[:] = ~np_any(value.is_missing(), axis=0)
+        else:
+            out[:] = ~np_any(
+                is_missing(value, self.inputs[0].missing_value),
+                axis=0
+            )
