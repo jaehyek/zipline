@@ -5,7 +5,7 @@ from itertools import chain
 from operator import attrgetter
 
 from numpy import (
-    any as np_any,
+    all as np_all,
     float64,
     nan,
     nanpercentile,
@@ -552,9 +552,10 @@ class AllPresent(CustomFilter, SingleInputMixin, StandardOutputs):
 
     def compute(self, today, assets, out, value):
         if isinstance(value, LabelArray):
-            out[:] = ~np_any(value.is_missing(), axis=0)
+            np_all(~value.is_missing(), axis=0, out=out)
         else:
-            out[:] = ~np_any(
-                is_missing(value, self.inputs[0].missing_value),
-                axis=0
+            np_all(
+                ~is_missing(value, self.inputs[0].missing_value),
+                axis=0,
+                out=out
             )
