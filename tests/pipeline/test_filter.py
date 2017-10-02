@@ -32,9 +32,9 @@ from zipline.pipeline.classifiers import Classifier
 from zipline.pipeline.factors import CustomFactor
 from zipline.pipeline.filters import (
     All,
+    AllPresent,
     Any,
     AtLeastN,
-    NoMissingValues,
     StaticAssets,
     StaticSids,
 )
@@ -380,8 +380,8 @@ class FilterTestCase(BasePipelineTestCase):
             mask=self.build_mask(self.ones_mask()),
         )
 
-    def test_no_missing_values_float_factor_input(self):
-        """Test float factor input to `NoMissingValues`
+    def test_all_present_float_factor_input(self):
+        """Test float factor input to `AllPresent`
         """
         class SomeWindowSafeFactor(Factor):
             dtype = float64_dtype
@@ -412,8 +412,8 @@ class FilterTestCase(BasePipelineTestCase):
                             [1, 1, 1, 1, 1, 1]], dtype=bool)
         self.check_terms(
             terms={
-                '3': NoMissingValues([input_factor], window_length=3),
-                '4': NoMissingValues([input_factor], window_length=4),
+                '3': AllPresent([input_factor], window_length=3),
+                '4': AllPresent([input_factor], window_length=4),
             },
             expected={
                 '3': expected_3,
@@ -423,8 +423,8 @@ class FilterTestCase(BasePipelineTestCase):
             mask=self.build_mask(ones(shape=shape))
         )
 
-    def test_no_missing_values_int_factor_input(self):
-        """Test int factor input to `NoMissingValues`
+    def test_all_present_int_factor_input(self):
+        """Test int factor input to `AllPresent`
         """
         class SomeWindowSafeIntFactor(Factor):
             dtype = int64_dtype
@@ -456,8 +456,8 @@ class FilterTestCase(BasePipelineTestCase):
                             [1, 1, 1, 1, 1, 1]], dtype=bool)
         self.check_terms(
             terms={
-                '3': NoMissingValues([input_factor], window_length=3),
-                '4': NoMissingValues([input_factor], window_length=4),
+                '3': AllPresent([input_factor], window_length=3),
+                '4': AllPresent([input_factor], window_length=4),
             },
             expected={
                 '3': expected_3,
@@ -467,8 +467,8 @@ class FilterTestCase(BasePipelineTestCase):
             mask=self.build_mask(ones(shape=shape))
         )
 
-    def test_no_missing_values_classifier_input(self):
-        """Test classifier factor input to `NoMissingValues`
+    def test_all_present_classifier_input(self):
+        """Test classifier factor input to `AllPresent`
         """
         class SomeWindowSafeStringClassifier(Classifier):
             dtype = object_dtype
@@ -505,8 +505,8 @@ class FilterTestCase(BasePipelineTestCase):
 
         self.check_terms(
             terms={
-                '3': NoMissingValues([input_factor], window_length=3),
-                '4': NoMissingValues([input_factor], window_length=4),
+                '3': AllPresent([input_factor], window_length=3),
+                '4': AllPresent([input_factor], window_length=4),
             },
             expected={
                 '3': expected_3,
@@ -516,16 +516,15 @@ class FilterTestCase(BasePipelineTestCase):
             mask=self.build_mask(ones(shape=shape))
         )
 
-    def test_no_missing_values_filter_input(self):
-        """Test error is raised when filter factor is input to
-        `NoMissingValues`
+    def test_all_present_filter_input(self):
+        """Test error is raised when filter factor is input to `AllPresent`
         """
-        with self.assertRaises(ValueError) as err:
-            NoMissingValues([Mask()], window_length=4)
+        with self.assertRaises(TypeError) as err:
+            AllPresent([Mask()], window_length=4)
 
         self.assertEqual(
-            "Input to filter `NoMissingValues` cannot be a Filter.",
-            err.exception.message
+            "Input to filter `AllPresent` cannot be a Filter.",
+            str(err.exception)
         )
 
     def test_all(self):

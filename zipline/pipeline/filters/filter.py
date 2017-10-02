@@ -32,8 +32,8 @@ from zipline.pipeline.mixins import (
     PositiveWindowLengthMixin,
     RestrictedDTypeMixin,
     SingleInputMixin,
+    StandardOutputs,
 )
-from zipline.pipeline.sentinels import NotSpecified
 from zipline.pipeline.term import ComputableTerm, Term
 from zipline.utils.input_validation import expect_types
 from zipline.utils.memoize import classlazyval
@@ -537,26 +537,18 @@ class StaticAssets(StaticSids):
         return super(StaticAssets, cls).__new__(cls, sids)
 
 
-class NoMissingValues(CustomFilter, SingleInputMixin):
+class AllPresent(CustomFilter, SingleInputMixin, StandardOutputs):
     """Pipeline filter indicating input term has data for a given window.
     """
 
-    def __new__(cls,
-                inputs,
-                window_length,
-                mask=NotSpecified):
+    def _validate(self):
 
-        if isinstance(inputs[0], Filter):
-            raise ValueError(
-                "Input to filter `NoMissingValues` cannot be a Filter."
+        if isinstance(self.inputs[0], Filter):
+            raise TypeError(
+                "Input to filter `AllPresent` cannot be a Filter."
             )
 
-        return super(NoMissingValues, cls).__new__(
-            cls,
-            inputs=inputs,
-            window_length=window_length,
-            mask=mask,
-        )
+        return super(AllPresent, self)._validate()
 
     def compute(self, today, assets, out, value):
         if isinstance(value, LabelArray):
