@@ -17,18 +17,28 @@
   
   
 Installing zipline in python3.6 32bit  
+
 - 1. First install anaconda 3.6 32bit.  
+
 - 2. Download zipline.  
+
 - 3. Open the VS 2017 x86 native tool cmd and go to zipline directory.  
+
 - 4. python.exe setup.py build  
+
 - 5. python.exe setup.py install  
-- Where zipline is installed with pandas == 0.18.1.  
+
+Where zipline is installed with pandas == 0.18.1.  
 If pandas = 0.20.3 installed with anaconda, delete pandas  
+
 - 6. pip uninstall pandas  
-- pandas = 0.20.3 is removed, and pandas == 0.18.1 is displayed instead.  
+
+pandas = 0.20.3 is removed, and pandas == 0.18.1 is displayed instead.  
+
 - 7. pip freeze | grep -i pandas  
   
 - now zipline was installed on anaconda 3.6 32bit ( 2017.10.09 )  
+
 - you can verify like below   
 .. code:: python
     from zipline.api import order_target, record, symbol  
