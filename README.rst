@@ -41,8 +41,7 @@ now zipline was installed on anaconda 3.6 32bit ( 2017.10.09 )
 
 you can verify like below   
 
-.. code:: python
-    from zipline.api import order_target, record, symbol  
+``from zipline.api import order_target, record, symbol``
 
 
 ==============  
